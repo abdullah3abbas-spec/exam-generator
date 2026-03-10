@@ -613,34 +613,20 @@ async function generateExam() {
   document.getElementById('score-card').classList.remove('show');
   selectedAnswers = {};
 
-  const userMsg = `Generate a chemistry exam for Grade 12 Qatar curriculum on the topic of Chemical Equilibrium.
-Topics: ${topics}
-Difficulty: ${difficulty}
-Number of MCQ questions: ${mcqCount}
-Number of essay questions: ${essayCount}
+  const userMsg = `You must respond with ONLY a JSON object. No text before or after. No markdown. No code fences.
 
-Write ALL questions and answers in Arabic.
-Return ONLY a JSON object, no other text. Use this exact structure:
-{
-  "title": "exam title in Arabic",
-  "duration": "45 minutes",
-  "totalMarks": ${parseInt(mcqCount) + parseInt(essayCount) * 5},
-  "mcq": [
-    {
-      "q": "question text in Arabic",
-      "options": ["option A", "option B", "option C", "option D"],
-      "answer": 0,
-      "explanation": "short explanation in Arabic"
-    }
-  ],
-  "essay": [
-    {
-      "q": "essay question in Arabic",
-      "marks": 5,
-      "modelAnswer": "model answer in Arabic"
-    }
-  ]
-}`;
+The JSON must have exactly this structure:
+{"title":"...","duration":"45 min","totalMarks":${parseInt(mcqCount) + parseInt(essayCount) * 5},"mcq":[{"q":"...","options":["...","...","...","..."],"answer":0,"explanation":"..."}],"essay":[{"q":"...","marks":5,"modelAnswer":"..."}]}
+
+Rules:
+- Write all content in Arabic
+- mcq array must have exactly ${mcqCount} items
+- essay array must have exactly ${essayCount} items  
+- answer field is a number 0-3 (index of correct option)
+- Topics: ${topics}
+- Difficulty: ${difficulty}
+- Do NOT use double quotes inside string values, use single quotes instead
+- Your entire response must be parseable by JSON.parse()`;
 
   try {
     const res = await fetch("/api/generate", {
@@ -649,7 +635,7 @@ Return ONLY a JSON object, no other text. Use this exact structure:
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 3000,
-        system: "You are a chemistry exam generator. Output ONLY raw JSON, no markdown, no explanation, no code fences. Start your response directly with {",
+        system: "You are a JSON generator. You output ONLY valid JSON. Never add any text outside the JSON object. Never use markdown. Start your response with { and end with }",
         messages: [{ role: "user", content: userMsg }]
       })
     });
@@ -665,16 +651,27 @@ Return ONLY a JSON object, no other text. Use this exact structure:
 
     let text = data.content[0].text.trim();
 
-    // Strip markdown fences if present
+    // Aggressively strip any markdown fences
     text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
 
-    // Extract JSON object
+    // Find the JSON object boundaries
     const start = text.indexOf('{');
     const end = text.lastIndexOf('}');
-    if (start === -1 || end === -1) throw new Error('No JSON in response: ' + text.substring(0, 300));
+    if (start === -1 || end === -1) throw new Error('لم يتم إنشاء امتحان صحيح، حاول مجدداً');
 
     const jsonStr = text.substring(start, end + 1);
-    examData = JSON.parse(jsonStr);
+
+    try {
+      examData = JSON.parse(jsonStr);
+    } catch(parseErr) {
+      // Try to fix common JSON issues
+      const fixed = jsonStr
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ') // remove control chars
+        .replace(/,\s*}/g, '}')   // trailing commas in objects
+        .replace(/,\s*]/g, ']');  // trailing commas in arrays
+      examData = JSON.parse(fixed);
+    }
+
     renderExam(examData);
   } catch (e) {
     console.error('Full error:', e);
