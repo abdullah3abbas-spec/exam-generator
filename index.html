@@ -649,7 +649,7 @@ Return ONLY a JSON object, no other text. Use this exact structure:
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 3000,
-        system: "You are a chemistry teacher. Always respond with valid JSON only. No markdown, no code blocks, no extra text. Just the raw JSON object.",
+        system: "You are a chemistry exam generator. Output ONLY raw JSON, no markdown, no explanation, no code fences. Start your response directly with {",
         messages: [{ role: "user", content: userMsg }]
       })
     });
@@ -663,12 +663,15 @@ Return ONLY a JSON object, no other text. Use this exact structure:
     if (data.error) throw new Error(data.error.message);
     if (!data.content || !data.content[0]) throw new Error('Empty response from API');
 
-    const text = data.content[0].text.trim();
+    let text = data.content[0].text.trim();
 
-    // Extract JSON - find first { and last }
+    // Strip markdown fences if present
+    text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+
+    // Extract JSON object
     const start = text.indexOf('{');
     const end = text.lastIndexOf('}');
-    if (start === -1 || end === -1) throw new Error('No JSON found. Response: ' + text.substring(0, 200));
+    if (start === -1 || end === -1) throw new Error('No JSON in response: ' + text.substring(0, 300));
 
     const jsonStr = text.substring(start, end + 1);
     examData = JSON.parse(jsonStr);
