@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مولّد الامتحانات الذكي | الصف الثاني عشر</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --deep: #0a0e1a;
+    --panel: #0f1629;
+    --card: #141d35;
+    --border: #1e2d54;
+    --gold: #f5c842;
+    --gold2: #e8a020;
+    --cyan: #00d4ff;
+    --green: #00e5a0;
+    --red: #ff4f6b;
+    --text: #e8eaf6;
+    --muted: #7986cb;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--deep);
+    color: var(--text);
+    font-family: 'Cairo', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(245,200,66,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,200,66,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb1 { width: 500px; height: 500px; background: rgba(245,200,66,0.07); top: -100px; right: -100px; }
+  .orb2 { width: 400px; height: 400px; background: rgba(0,212,255,0.05); bottom: -100px; left: -50px; }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 50px 0 30px;
+    animation: fadeDown 0.8s ease;
+  }
+
+  .badge {
+    display: inline-block;
+    background: linear-gradient(135deg, rgba(245,200,66,0.15), rgba(232,160,32,0.1));
+    border: 1px solid rgba(245,200,66,0.3);
+    color: var(--gold);
+    padding: 6px 18px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+
+  h1 {
+    font-family: 'Tajawal', sans-serif;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 900;
+    background: linear-gradient(135deg, #fff 30%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 16px;
+    font-weight: 400;
+  }
+
+  /* Config Panel */
+  .config-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.8s ease 0.2s both;
+  }
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .field-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gold);
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .field-group select,
+  .field-group input {
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'Cairo', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    direction: rtl;
+  }
+
+  .field-group select:focus,
+  .field-group input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(245,200,66,0.1);
+  }
+
+  .topic-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .chip {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--muted);
+  }
+
+  .chip.active {
+    background: linear-gradient(135deg, rgba(245,200,66,0.2), rgba(232,160,32,0.15));
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .generate-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    color: var(--deep);
+    font-family: 'Cairo', sans-serif;
+    font-size: 17px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .generate-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(245,200,66,0.35);
+  }
+
+  .generate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Loading */
+  .loading-wrap {
+    display: none;
+    text-align: center;
+    padding: 50px 20px;
+    animation: fadeUp 0.5s ease;
+  }
+
+  .loading-wrap.show { display: block; }
+
+  .spinner {
+    width: 60px;
+    height: 60px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .loading-text {
+    color: var(--muted);
+    font-size: 15px;
+    animation: pulse 1.5s ease infinite;
+  }
+
+  /* Exam Output */
+  #exam-output { display: none; animation: fadeUp 0.6s ease; }
+  #exam-output.show { display: block; }
+
+  .exam-header-bar {
+    background: linear-gradient(135deg, var(--card), #1a2545);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .exam-title-wrap h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .exam-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .meta-tag {
+    background: rgba(245,200,66,0.1);
+    border: 1px solid rgba(245,200,66,0.2);
+    color: var(--gold);
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .exam-actions { display: flex; gap: 10px; }
+
+  .btn-sm {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-sm:hover { border-color: var(--gold); color: var(--gold); }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--cyan);
+    margin: 28px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-title .icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .mcq-section .icon { background: rgba(0,212,255,0.1); }
+  .essay-section .icon { background: rgba(0,229,160,0.1); }
+
+  .question-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+
+  .question-card:hover { border-color: rgba(245,200,66,0.3); }
+
+  .q-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    border-radius: 8px;
+    color: var(--deep);
+    font-size: 13px;
+    font-weight: 900;
+    margin-left: 10px;
+    flex-shrink: 0;
+  }
+
+  .q-text {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.7;
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    margin-bottom: 16px;
+    color: #fff;
+  }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .option {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .option:hover { border-color: var(--cyan); background: rgba(0,212,255,0.05); }
+  .option.selected { border-color: var(--cyan); background: rgba(0,212,255,0.1); color: var(--cyan); }
+  .option.correct { border-color: var(--green); background: rgba(0,229,160,0.1); color: var(--green); }
+  .option.wrong { border-color: var(--red); background: rgba(255,79,107,0.1); color: var(--red); }
+
+  .option-letter {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .essay-answer {
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Cairo', sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+    resize: vertical;
+    min-height: 100px;
+    outline: none;
+    transition: border-color 0.2s;
+    direction: rtl;
+    margin-top: 10px;
+  }
+
+  .essay-answer:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,229,160,0.1); }
+
+  .marks-badge {
+    float: left;
+    background: rgba(0,229,160,0.1);
+    border: 1px solid rgba(0,229,160,0.2);
+    color: var(--green);
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .check-btn {
+    margin-top: 20px;
+    background: linear-gradient(135deg, var(--cyan), #0099bb);
+    border: none;
+    border-radius: 10px;
+    padding: 13px 28px;
+    color: #fff;
+    font-family: 'Cairo', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .check-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,212,255,0.3); }
+
+  /* Score */
+  .score-card {
+    background: linear-gradient(135deg, rgba(0,229,160,0.1), rgba(0,212,255,0.08));
+    border: 1px solid rgba(0,229,160,0.3);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    margin-top: 24px;
+    display: none;
+    animation: popIn 0.4s ease;
+  }
+
+  .score-card.show { display: block; }
+  .score-number { font-size: 52px; font-weight: 900; color: var(--green); }
+  .score-label { color: var(--muted); font-size: 15px; margin-top: 4px; }
+
+  /* Answer reveal */
+  .answer-reveal {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: rgba(0,229,160,0.07);
+    border: 1px solid rgba(0,229,160,0.2);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--green);
+    display: none;
+  }
+  .answer-reveal.show { display: block; }
+
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+  @media (max-width: 600px) {
+    .options-grid { grid-template-columns: 1fr; }
+    .config-grid { grid-template-columns: 1fr; }
+    .exam-header-bar { flex-direction: column; }
+  }
+
+  /* Print styles */
+  @media print {
+    body { background: white; color: black; }
+    .config-panel, .generate-btn, .exam-actions, .check-btn, .essay-answer, .glow-orb { display: none !important; }
+    .question-card { background: white; border-color: #ddd; }
+  }
+</style>
+</head>
+<body>
+
+<div class="glow-orb orb1"></div>
+<div class="glow-orb orb2"></div>
+
+<div class="container">
+  <div class="header">
+    <div class="badge">🇶🇦 المنهج القطري | الصف الثاني عشر</div>
+    <h1>مولّد الامتحانات الذكي</h1>
+    <p class="subtitle">امتحانات مخصصة بالذكاء الاصطناعي لوحدة الاتزان</p>
+  </div>
+
+  <div class="config-panel">
+    <div style="margin-bottom:14px">
+      <label style="font-size:13px;font-weight:600;color:var(--gold);display:block;margin-bottom:10px;">📚 اختر المواضيع</label>
+      <div class="topic-chips">
+        <div class="chip active" data-topic="الاتزان الكيميائي وثابت الاتزان">الاتزان الكيميائي وKc</div>
+        <div class="chip active" data-topic="مبدأ لو شاتيليه">مبدأ لو شاتيليه</div>
+        <div class="chip active" data-topic="حسابات الاتزان والـICE table">جدول ICE</div>
+        <div class="chip" data-topic="الاتزان الأيوني وpH">الاتزان الأيوني وpH</div>
+        <div class="chip" data-topic="الأحماض والقواعد وثابت Ka وKb">الأحماض والقواعد Ka/Kb</div>
+        <div class="chip" data-topic="حاصل الإذابة Ksp">حاصل الإذابة Ksp</div>
+      </div>
+    </div>
+
+    <div class="config-grid">
+      <div class="field-group">
+        <label>عدد أسئلة الاختيار من متعدد</label>
+        <select id="mcq-count">
+          <option value="5">5 أسئلة</option>
+          <option value="8" selected>8 أسئلة</option>
+          <option value="10">10 أسئلة</option>
+          <option value="12">12 سؤالاً</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>عدد الأسئلة المقالية</label>
+        <select id="essay-count">
+          <option value="2">2 أسئلة</option>
+          <option value="3" selected>3 أسئلة</option>
+          <option value="4">4 أسئلة</option>
+          <option value="5">5 أسئلة</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>مستوى الصعوبة</label>
+        <select id="difficulty">
+          <option value="سهل">سهل</option>
+          <option value="متوسط" selected>متوسط</option>
+          <option value="صعب">صعب</option>
+          <option value="مختلط">مختلط (موصى به)</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="generate-btn" id="gen-btn" onclick="generateExam()">
+      ✨ إنشاء الامتحان بالذكاء الاصطناعي
+    </button>
+  </div>
+
+  <div class="loading-wrap" id="loading">
+    <div class="spinner"></div>
+    <p class="loading-text">🤖 الذكاء الاصطناعي يصمّم امتحانك...</p>
+    <p style="color:var(--muted);font-size:12px;margin-top:8px;">قد يستغرق هذا بضع ثوانٍ</p>
+  </div>
+
+  <div id="exam-output">
+    <div class="exam-header-bar">
+      <div class="exam-title-wrap">
+        <h2 id="exam-title">امتحان وحدة الاتزان</h2>
+        <div class="exam-meta" id="exam-meta"></div>
+      </div>
+      <div class="exam-actions">
+        <button class="btn-sm" onclick="window.print()">🖨️ طباعة</button>
+        <button class="btn-sm" onclick="generateExam()">🔄 امتحان جديد</button>
+      </div>
+    </div>
+
+    <div id="mcq-section" class="mcq-section">
+      <div class="section-title">
+        <div class="icon">🔵</div>
+        السؤال الأول: الاختيار من متعدد
+      </div>
+      <div id="mcq-questions"></div>
+    </div>
+
+    <div id="essay-section" class="essay-section">
+      <div class="section-title">
+        <div class="icon">✏️</div>
+        السؤال الثاني: الأسئلة المقالية
+      </div>
+      <div id="essay-questions"></div>
+    </div>
+
+    <div style="text-align:center;margin-top:20px;">
+      <button class="check-btn" onclick="checkAnswers()">✅ تحقق من إجاباتي</button>
+    </div>
+
+    <div class="score-card" id="score-card">
+      <div class="score-number" id="score-display">0/0</div>
+      <div class="score-label">درجتك في الاختيار من متعدد</div>
+      <div id="score-msg" style="margin-top:10px;font-size:14px;color:var(--muted);"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let examData = null;
+let selectedAnswers = {};
+
+function getActiveTopics() {
+  return [...document.querySelectorAll('.chip.active')].map(c => c.dataset.topic).join('، ');
+}
+
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => chip.classList.toggle('active'));
+});
+
+async function generateExam() {
+  const topics = getActiveTopics();
+  if (!topics) { alert('يرجى اختيار موضوع واحد على الأقل'); return; }
+
+  const mcqCount = document.getElementById('mcq-count').value;
+  const essayCount = document.getElementById('essay-count').value;
+  const difficulty = document.getElementById('difficulty').value;
+
+  document.getElementById('gen-btn').disabled = true;
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('exam-output').classList.remove('show');
+  document.getElementById('exam-output').style.display = 'none';
+  document.getElementById('score-card').classList.remove('show');
+  selectedAnswers = {};
+
+  const userMsg = `Generate a chemistry exam for Grade 12 Qatar curriculum on the topic of Chemical Equilibrium.
+Topics: ${topics}
+Difficulty: ${difficulty}
+Number of MCQ questions: ${mcqCount}
+Number of essay questions: ${essayCount}
+
+Write ALL questions and answers in Arabic.
+Return ONLY a JSON object, no other text. Use this exact structure:
+{
+  "title": "exam title in Arabic",
+  "duration": "45 minutes",
+  "totalMarks": ${parseInt(mcqCount) + parseInt(essayCount) * 5},
+  "mcq": [
+    {
+      "q": "question text in Arabic",
+      "options": ["option A", "option B", "option C", "option D"],
+      "answer": 0,
+      "explanation": "short explanation in Arabic"
+    }
+  ],
+  "essay": [
+    {
+      "q": "essay question in Arabic",
+      "marks": 5,
+      "modelAnswer": "model answer in Arabic"
+    }
+  ]
+}`;
+
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 8000,
+        system: "You are a chemistry teacher. Always respond with valid JSON only. No markdown, no code blocks, no extra text. Just the raw JSON object.",
+        messages: [{ role: "user", content: userMsg }]
+      })
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`HTTP ${res.status}: ${errText}`);
+    }
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    if (!data.content || !data.content[0]) throw new Error('Empty response from API');
+
+    const text = data.content[0].text.trim();
+
+    // Extract JSON - find first { and last }
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1 || end === -1) throw new Error('No JSON found. Response: ' + text.substring(0, 200));
+
+    const jsonStr = text.substring(start, end + 1);
+    examData = JSON.parse(jsonStr);
+    renderExam(examData);
+  } catch (e) {
+    console.error('Full error:', e);
+    alert('خطأ: ' + e.message);
+    console.error(e);
+  } finally {
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('gen-btn').disabled = false;
+  }
+}
+
+function renderExam(data) {
+  document.getElementById('exam-title').textContent = data.title || 'امتحان وحدة الاتزان';
+  document.getElementById('exam-meta').innerHTML = `
+    <span class="meta-tag">⏱️ ${data.duration || '45 دقيقة'}</span>
+    <span class="meta-tag">📊 ${data.totalMarks || '—'} درجة</span>
+    <span class="meta-tag">❓ ${data.mcq.length + data.essay.length} سؤال</span>
+  `;
+
+  // MCQ
+  const mcqEl = document.getElementById('mcq-questions');
+  mcqEl.innerHTML = '';
+  data.mcq.forEach((q, i) => {
+    const letters = ['أ', 'ب', 'ج', 'د'];
+    const optHtml = q.options.map((opt, j) => `
+      <div class="option" data-qi="${i}" data-oi="${j}" onclick="selectOption(this, ${i}, ${j})">
+        <div class="option-letter">${letters[j]}</div>
+        <span>${opt.replace(/^[أبجد]\)\s*/, '')}</span>
+      </div>
+    `).join('');
+
+    mcqEl.innerHTML += `
+      <div class="question-card" id="mcq-${i}">
+        <div class="q-text"><span class="q-number">${i+1}</span><span>${q.q}</span></div>
+        <div class="options-grid">${optHtml}</div>
+        <div class="answer-reveal" id="reveal-${i}">
+          ✅ الإجابة الصحيحة: <strong>${letters[q.answer]}</strong> — ${q.explanation || ''}
+        </div>
+      </div>
+    `;
+  });
+
+  // Essay
+  const essayEl = document.getElementById('essay-questions');
+  essayEl.innerHTML = '';
+  data.essay.forEach((q, i) => {
+    essayEl.innerHTML += `
+      <div class="question-card">
+        <div class="q-text">
+          <span class="q-number">${i+1}</span>
+          <span>${q.q}</span>
+          <span class="marks-badge">${q.marks} درجات</span>
+        </div>
+        <textarea class="essay-answer" placeholder="اكتب إجابتك هنا..." id="essay-ans-${i}"></textarea>
+        <div class="answer-reveal" id="essay-reveal-${i}">
+          📋 <strong>الإجابة النموذجية:</strong><br>${q.modelAnswer || ''}
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById('exam-output').style.display = 'block';
+  document.getElementById('exam-output').classList.add('show');
+  document.getElementById('exam-output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function selectOption(el, qi, oi) {
+  document.querySelectorAll(`.option[data-qi="${qi}"]`).forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAnswers[qi] = oi;
+}
+
+function checkAnswers() {
+  if (!examData) return;
+  let correct = 0;
+
+  examData.mcq.forEach((q, i) => {
+    const opts = document.querySelectorAll(`.option[data-qi="${i}"]`);
+    opts.forEach(o => o.classList.remove('correct', 'wrong'));
+
+    const userAns = selectedAnswers[i];
+    opts[q.answer].classList.add('correct');
+
+    if (userAns !== undefined) {
+      if (userAns === q.answer) { correct++; }
+      else { opts[userAns].classList.add('wrong'); }
+    }
+
+    document.getElementById(`reveal-${i}`).classList.add('show');
+  });
+
+  examData.essay.forEach((_, i) => {
+    document.getElementById(`essay-reveal-${i}`).classList.add('show');
+  });
+
+  const total = examData.mcq.length;
+  const pct = Math.round((correct / total) * 100);
+  document.getElementById('score-display').textContent = `${correct}/${total}`;
+  document.getElementById('score-msg').textContent = pct >= 80 ? '🌟 ممتاز! أداء رائع' : pct >= 60 ? '👍 جيد، استمر في المراجعة' : '📚 تحتاج مزيداً من المراجعة، لا تستسلم!';
+  document.getElementById('score-card').classList.add('show');
+  document.getElementById('score-card').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
