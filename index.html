@@ -647,8 +647,8 @@ Return ONLY a JSON object, no other text. Use this exact structure:
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 8000,
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 3000,
         system: "You are a chemistry teacher. Always respond with valid JSON only. No markdown, no code blocks, no extra text. Just the raw JSON object.",
         messages: [{ role: "user", content: userMsg }]
       })
