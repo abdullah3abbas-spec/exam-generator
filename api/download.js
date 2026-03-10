@@ -17,7 +17,6 @@ const bordersThick = { top: bdrThick, bottom: bdrThick, left: bdrThick, right: b
 const bordersThin  = { top: bdrThin,  bottom: bdrThin,  left: bdrThin,  right: bdrThin  };
 const bordersNone  = { top: bdrNone,  bottom: bdrNone,  left: bdrNone,  right: bdrNone  };
 
-// A4 content width in DXA: 11906 - 1440 (margins) = 9000 (approx)
 const PAGE_W = 9000;
 
 function rtl(text, opts = {}) {
@@ -69,9 +68,8 @@ function emptyPara(before = 120) {
   return new Paragraph({ children: [], spacing: { before, after: 0 } });
 }
 
-// ── Build the score table ──────────────────────────────────────────────────
 function buildScoreTable(mcqs, essays) {
-  const colW = [1600, 1300, 1300, 1300, 1800, 1700]; // sum = 9000
+  const colW = [1600, 1300, 1300, 1300, 1800, 1700];
   const hdr = ['الأسئلة', 'رقم السؤال', 'درجة السؤال', 'درجة الطالب', 'المصحح', 'المراجع'];
 
   const rows = [
@@ -102,7 +100,7 @@ function buildScoreTable(mcqs, essays) {
       children: [
         tableCell('', { borders: bordersThick }),
         tableCell('المجموع', { shade: 'F2F2F2', borders: bordersThick }),
-        tableCell(`${mcqs.reduce((s,_)=>s+1,0) + essays.reduce((s,q)=>s+(q.marks||15),0)} درجة`, { borders: bordersThick }),
+        tableCell(`${mcqs.length + essays.reduce((s,q)=>s+(q.marks||15),0)} درجة`, { borders: bordersThick }),
         tableCell('', { borders: bordersThick }),
         tableCell('', { borders: bordersThick }),
         tableCell('', { borders: bordersThick }),
@@ -125,7 +123,6 @@ function buildScoreTable(mcqs, essays) {
   return makeTable(rows, colW);
 }
 
-// ── Build instructions box ─────────────────────────────────────────────────
 function buildInstructions(totalQ) {
   const instrs = [
     'يجب استخدام القلم الرصاص للإجابة عن أسئلة الاختيار من متعدد كما يمكن استخدامه في الرسومات.',
@@ -159,12 +156,10 @@ function buildInstructions(totalQ) {
   ], [PAGE_W]);
 }
 
-// ── Build MCQ section ──────────────────────────────────────────────────────
 function buildMCQ(mcqs) {
   const items = [];
   const letters = ['أ', 'ب', 'ج', 'د'];
 
-  // Section instruction box
   items.push(makeTable([
     new TableRow({
       children: [
@@ -183,18 +178,15 @@ function buildMCQ(mcqs) {
   items.push(emptyPara(120));
 
   mcqs.forEach((q, i) => {
-    // Question number + text
     items.push(para(
       [rtl(`${i + 1}-  `, { bold: true, size: 22 }), rtl(q.q, { bold: true, size: 22 })],
       AlignmentType.RIGHT, { before: 140, after: 80 }
     ));
 
-    // 4 options in 2-column RTL table
     const colW2 = [4500, 4500];
     const optRows = [];
     for (let r = 0; r < 2; r++) {
       const cells = [];
-      // RTL: col 0 = right side (options 1,3), col 1 = left side (options 0,2)
       for (let c = 1; c >= 0; c--) {
         const oi = r * 2 + c;
         cells.push(new TableCell({
@@ -215,14 +207,12 @@ function buildMCQ(mcqs) {
   return items;
 }
 
-// ── Build Essay section ────────────────────────────────────────────────────
 function buildEssay(mcqs, essays) {
   const items = [];
 
   essays.forEach((q, i) => {
     const qNum = mcqs.length + i + 1;
 
-    // Question header table
     items.push(emptyPara(200));
     items.push(makeTable([
       new TableRow({
@@ -247,13 +237,11 @@ function buildEssay(mcqs, essays) {
       })
     ], [1400, 7600]));
 
-    // Question content
     items.push(para(
       [rtl(`${qNum} –  `, { bold: true, size: 22 }), rtl(q.q, { bold: true, size: 22 })],
       AlignmentType.RIGHT, { before: 120, after: 80 }
     ));
 
-    // Answer lines (dashes)
     for (let l = 0; l < 8; l++) {
       items.push(new Paragraph({
         bidirectional: true,
@@ -267,7 +255,6 @@ function buildEssay(mcqs, essays) {
   return items;
 }
 
-// ── Main handler ───────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -276,14 +263,18 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    const { examData, schoolName = 'مدرسة الايمان الثانوية' } = req.body;
+    const { examData, schoolName = 'مدرسة الايمان الثانوية', logoBase64 } = req.body;
     const mcqs   = examData.mcq   || [];
     const essays = examData.essay || [];
 
-    // Load logo
     let logoImage = null;
     try {
-      const logoData = readFileSync(join(__dirname, 'logo.png'));
+      let logoData = null;
+      if (logoBase64) {
+        logoData = Buffer.from(logoBase64, 'base64');
+      } else {
+        logoData = readFileSync(join(__dirname, 'logo.png'));
+      }
       logoImage = new Paragraph({
         alignment: AlignmentType.CENTER,
         children: [
@@ -313,43 +304,25 @@ export default async function handler(req, res) {
           }
         },
         children: [
-          // ── Header ────────────────────────────────────────────
           logoImage,
           headerPara(schoolName, 30),
           headerPara('الاختبار التجريبي للشهادة الثانوية', 26),
           headerPara('الفصل الدراسي الثاني للعام الدراسي 2024/2025م', 24),
           headerPara('مادة: الكيمياء                مسار: العلمي', 24),
           headerPara(`زمن الاختبار: ${examData.duration || 'ساعتان'}`, 24),
-
           emptyPara(120),
-
-          // ── Score Table ────────────────────────────────────────
           buildScoreTable(mcqs, essays),
-
           emptyPara(120),
-
-          // Coordinator line
           para(
             [rtl('المنسق / قائد الطاولة :  ................................................  التوقيع :  .......................', { size: 22 })],
             AlignmentType.RIGHT, { before: 100, after: 200 }
           ),
-
-          // ── Instructions ──────────────────────────────────────
           buildInstructions(mcqs.length + essays.length),
-
           emptyPara(240),
-
-          // ── MCQ Questions ─────────────────────────────────────
           ...buildMCQ(mcqs),
-
           emptyPara(240),
-
-          // ── Essay Questions ───────────────────────────────────
           ...buildEssay(mcqs, essays),
-
           emptyPara(400),
-
-          // ── End ───────────────────────────────────────────────
           para([rtl('انتهت جميع الأسئلة', { bold: true, size: 26 })], AlignmentType.CENTER, { before: 400 }),
         ]
       }]
@@ -357,7 +330,6 @@ export default async function handler(req, res) {
 
     const buffer = await Packer.toBuffer(doc);
     const filename = encodeURIComponent('امتحان-كيمياء.docx');
-
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`);
     res.send(buffer);
