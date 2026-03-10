@@ -11,8 +11,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Force lower max_tokens to stay within Vercel 10s timeout
-    const body = { ...req.body, max_tokens: 3000 };
+    const body = { ...req.body, max_tokens: 6000 };
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
